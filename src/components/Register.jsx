@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
 import { doc, setDoc } from "firebase/firestore";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth,db } from "../Firebase/config";
-
-
-
+import { auth, db } from "../Firebase/config";
+import { useNavigate } from 'react-router-dom';  // ✅ Import useNavigate
 
 const Register = ({ toggleForm }) => {
     const [formData, setFormData] = useState({
@@ -19,51 +17,47 @@ const Register = ({ toggleForm }) => {
     const [loading, setLoading] = useState(false);
     const [passwordMatch, setPasswordMatch] = useState(true);
 
+    const navigate = useNavigate();  // ✅ Initialize navigate
+
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
-    
         const newFormData = {
             ...formData,
             [name]: type === 'checkbox' ? checked : value,
         };
-    
         setFormData(newFormData);
-    
+
         if (name === 'password' || name === 'password_confirmation') {
             setPasswordMatch(newFormData.password === newFormData.password_confirmation);
         }
     };
-    
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError(null);
-    
-        // Client-side validation
+
         if (!formData.first_name || !formData.last_name || !formData.email || !formData.password || !formData.password_confirmation) {
             setError('All fields are required.');
             setLoading(false);
             return;
         }
-    
+
         if (!passwordMatch) {
             setError('Passwords do not match.');
             setLoading(false);
             return;
         }
-    
+
         try {
-            // Firebase user registration
             const userCredential = await createUserWithEmailAndPassword(
                 auth,
                 formData.email,
                 formData.password
             );
-        
+
             const user = userCredential.user;
-        
-            // ✅ Save additional user info in Firestore
+
             await setDoc(doc(db, "users", user.uid), {
                 first_name: formData.first_name,
                 last_name: formData.last_name,
@@ -71,19 +65,18 @@ const Register = ({ toggleForm }) => {
                 marketing_accept: formData.marketing_accept,
                 createdAt: new Date(),
             });
-        
+
             console.log("User registered and data saved:", user);
-        
-            // 🚀 Optional: Redirect to dashboard or show success message
+
+            navigate('/');  // ✅ Redirect to home page after successful registration
+
         } catch (err) {
             console.error("Error registering user:", err);
             setError(err.message || 'There was an issue with your registration.');
-        }
-         finally {
+        } finally {
             setLoading(false);
         }
     };
-    
 
     return (
         <section className="bg-white">
